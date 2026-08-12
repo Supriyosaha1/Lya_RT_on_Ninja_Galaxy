@@ -1,0 +1,82 @@
+# Local/editor files
+.DS_Store
+._*
+*.swp
+*.swo
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# PBS/runtime logs
+*.log
+*.out
+*.out[0-9]*
+*.o[0-9]*
+*.e[0-9]*
+*.pbs.log
+*.debug.log
+*.trace.log
+direct_trace*.log
+manual_test.log
+hosts
+nodefile.test
+
+# RASCAS generated photon/radiative-transfer products
+*.IC
+*.res
+*.spectrum
+*.cube
+*.image
+backup_photons.dat
+*.bak
+*.npy
+*.dom
+*.mesh
+domain_decomposition_params.dat
+
+# Converted RAMSES data are large cluster-local inputs. Keep directory
+# placeholders, not data dumps.
+/converted_output/**
+!/converted_output/
+!/converted_output/**/
+!/converted_output/**/.gitkeep
+
+# RASCAS/Fortran build products. Rebuild these on each cluster with that
+# cluster's MPI module; do not share compiled binaries through git.
+*.o
+*.mod
+*.smod
+*.a
+*.so
+*.dylib
+*.exe
+*.csv
+/rascas/f90/rascas
+/rascas/f90/LyaPhotonsFromGas
+/rascas/f90/PhotonsFromStars
+/rascas/f90/PhotonsFromSourceModel
+/rascas/f90/CreateDomDump
+/rascas/f90/old_binaries_before_*/
+
+# Generated run folders keep only .gitkeep placeholders by default.
+Lyman_alpha_line_profile/**/r_*/n_*/*
+!Lyman_alpha_line_profile/**/r_*/
+!Lyman_alpha_line_profile/**/r_*/n_*/
+!Lyman_alpha_line_profile/**/r_*/n_*/.gitkeep
+
+# Domain dumps are generated from CDD.cfg.
+Lyman_alpha_line_profile/domain_construction/dom_rsp_*/*
+!Lyman_alpha_line_profile/domain_construction/dom_rsp_*/
+!Lyman_alpha_line_profile/domain_construction/dom_rsp_*/.gitkeep
+
+# Plot products are generated from RASCAS outputs.
+Lyman_alpha_line_profile/**/plots/**
+!Lyman_alpha_line_profile/**/plots/
+!Lyman_alpha_line_profile/**/plots/**/
+!Lyman_alpha_line_profile/**/plots/**/.gitkeep
+
+# Generated PBS files from helper submission scripts.
+Lyman_alpha_line_profile/**/.pbs_generated/
+Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500/ramses_output
+
+/homogenous/static_sphere_validation_r03_64_20260813_000500/CODEX_WORKLOG.md
