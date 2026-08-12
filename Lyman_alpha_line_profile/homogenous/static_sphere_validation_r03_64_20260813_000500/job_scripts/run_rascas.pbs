@@ -1,0 +1,35 @@
+#!/bin/bash
+# Resources are supplied by qsub for smoke/final stages.
+#PBS -N ss_rascas
+#PBS -q mpi
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+: "${VALIDATION_ROOT:?}" "${CASE:?}" "${STAGE:?}"
+RUN="$VALIDATION_ROOT/rascas_run/$CASE/$STAGE"
+LOG="$VALIDATION_ROOT/logs/rascas_${CASE}_${STAGE}_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+date
+echo "PBS_JOBID=$PBS_JOBID CASE=$CASE STAGE=$STAGE HOST=$(hostname)"
+test -f "$PBS_NODEFILE"
+test -s "$RUN/Cont.cfg"
+test ! -e "$RUN/Cont.res" || { echo "ERROR: refusing existing result" >&2; exit 2; }
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module purge
+module load gcc_7
+cp "$PBS_NODEFILE" "$RUN/hosts.raw"
+awk '$0 !~ /^compute-4-(5|9|10)(\.|$)/' "$RUN/hosts.raw" > "$RUN/hosts"
+NPROCS=$(wc -l < "$RUN/hosts")
+test "$NPROCS" -ge 2
+export I_MPI_FABRICS=shm:ofi
+export FI_PROVIDER=tcp
+export FI_TCP_IFACE=p3p2
+export I_MPI_HYDRA_IFACE=p3p2
+cd "$RUN"
+mpirun -genv I_MPI_FABRICS "$I_MPI_FABRICS" -genv FI_PROVIDER "$FI_PROVIDER" \
+  -genv FI_TCP_IFACE "$FI_TCP_IFACE" -np "$NPROCS" --hostfile "$RUN/hosts" \
+  /user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/rascas Cont.cfg
+test -s Cont.res
+date

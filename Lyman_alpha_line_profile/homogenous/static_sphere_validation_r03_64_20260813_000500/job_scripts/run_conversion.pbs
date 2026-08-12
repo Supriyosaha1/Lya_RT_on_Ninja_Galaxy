@@ -1,0 +1,26 @@
+#!/bin/bash
+#PBS -N ss_convert_l6
+#PBS -q serial
+#PBS -l select=1:ncpus=1:mem=8gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+: "${VALIDATION_ROOT:?}" "${CASE:?}"
+CONVERTER=/user1/supriyo/Gadget_to_Ramses_Converter
+CONFIG="$VALIDATION_ROOT/conversion/$CASE/converter_config.json"
+OUTPUT="$VALIDATION_ROOT/ramses_output/$CASE/output_00001"
+LOG="$VALIDATION_ROOT/logs/conversion_${CASE}_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+date
+echo "PBS_JOBID=$PBS_JOBID CASE=$CASE HOST=$(hostname)"
+test -f "$CONFIG"
+if [ -e "$OUTPUT" ]; then echo "ERROR: refusing existing output $OUTPUT" >&2; exit 2; fi
+cd "$CONVERTER"
+/user1/supriyo/miniconda3/envs/rascas-env/bin/python -m converter.write_amr --serial --config "$CONFIG" --iout 1
+/user1/supriyo/miniconda3/envs/rascas-env/bin/python -m converter.write_hydro --serial --config "$CONFIG" --iout 1
+test -s "$OUTPUT/amr_00001.out00001"
+test -s "$OUTPUT/hydro_00001.out00001"
+date

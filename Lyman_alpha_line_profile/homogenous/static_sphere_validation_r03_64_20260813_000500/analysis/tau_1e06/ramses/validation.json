@@ -1,0 +1,79 @@
+{
+  "case": "tau_1e06",
+  "dataset": "/user1/supriyo/Lya_RT_on_Ninja_Galaxy/Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500/ramses_output/tau_1e06/output_00001",
+  "domain_dimensions": [
+    64,
+    64,
+    64
+  ],
+  "expected_density_factor": 232.31332351999998,
+  "fields": {
+    "density": {
+      "max": 5.988432917988073e-05,
+      "mean": 5.988432917988069e-05,
+      "min": 5.988432917988073e-05,
+      "size": 262144
+    },
+    "internal_energy": {
+      "max": 1.0152911700772016,
+      "mean": 1.0152911700772016,
+      "min": 1.0152911700772016,
+      "size": 262144
+    },
+    "metallicity": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "size": 262144
+    },
+    "pressure": {
+      "max": 4.053335376155295e-05,
+      "mean": 4.053335376155296e-05,
+      "min": 4.053335376155295e-05,
+      "size": 262144
+    },
+    "scalar_01": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "size": 262144
+    },
+    "velocity_x": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "size": 262144
+    },
+    "velocity_y": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "size": 262144
+    },
+    "velocity_z": {
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "size": 262144
+    }
+  },
+  "nleaf": 262144,
+  "status": "PASSED",
+  "tau0": 1000000.0,
+  "temperature_K": {
+    "max": 100.0,
+    "mean": 100.0,
+    "min": 100.0,
+    "size": 262144
+  },
+  "yt_field_mapping": {
+    "density": "('ramses', 'Density')",
+    "internal_energy": "('ramses', 'hydro_internal_energy')",
+    "metallicity": "('ramses', 'Metallicity')",
+    "pressure": "('ramses', 'Pressure')",
+    "scalar_01": "('ramses', 'hydro_scalar_01')",
+    "velocity_x": "('ramses', 'x-velocity')",
+    "velocity_y": "('ramses', 'y-velocity')",
+    "velocity_z": "('ramses', 'z-velocity')"
+  }
+}

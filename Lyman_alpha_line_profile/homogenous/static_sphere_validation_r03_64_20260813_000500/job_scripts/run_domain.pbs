@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -N ss_domain_r03
+#PBS -q serial
+#PBS -l select=1:ncpus=1:mem=8gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+: "${VALIDATION_ROOT:?}" "${CASE:?}"
+RUN="$VALIDATION_ROOT/domain/$CASE"
+LOG="$VALIDATION_ROOT/logs/domain_${CASE}_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+date
+echo "PBS_JOBID=$PBS_JOBID CASE=$CASE HOST=$(hostname)"
+for target in compute_domain.dom domain_1.dom domain_1.mesh domain_decomposition_params.dat; do
+  if [ -e "$RUN/$target" ]; then echo "ERROR: refusing existing $RUN/$target" >&2; exit 2; fi
+done
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module purge
+module load gcc_7
+cd "$RUN"
+/user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/CreateDomDump CDD.cfg
+test -s domain_1.mesh
+test -s compute_domain.dom
+date
+

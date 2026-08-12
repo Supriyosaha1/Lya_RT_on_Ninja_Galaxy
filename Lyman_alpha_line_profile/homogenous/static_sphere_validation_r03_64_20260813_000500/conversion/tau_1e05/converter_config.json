@@ -1,0 +1,150 @@
+{
+  "header": {
+    "ncpu": 1,
+    "ndim": 3,
+    "nx": 1,
+    "ny": 1,
+    "nz": 1,
+    "nlevelmax": 6,
+    "ngridmax": 262144,
+    "nboundary": 0,
+    "boxlen": 1.0,
+    "ncoarse": 1,
+    "nvector": 32,
+    "base_path": "/user1/supriyo/Lya_RT_on_Ninja_Galaxy/Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500/cartesian_input/tau_1e05",
+    "output_path": "/user1/supriyo/Lya_RT_on_Ninja_Galaxy/Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500/ramses_output/tau_1e05",
+    "part_input_dir": "../Gadget_Output/binary_data",
+    "part_output_dir": "/user1/supriyo/rascas/photon_generation_notes/ramses_static_sphere_64_npy/converted_output/level6",
+    "dm_input_dir": "../Gadget_Output/DM",
+    "star_input_dir": "../Gadget_Output/star_particle",
+    "part_use_bin": false,
+    "part_use_pkl": true
+  },
+  "hydro": {
+    "gamma": 1.6666666666666667,
+    "h0": 0.6736,
+    "redshift": 7.0,
+    "velocity_factor": 1.0,
+    "internal_energy_factor": 1.0,
+    "field_files": {
+      "density": "density.npy",
+      "velocity_x": "velocity_x.npy",
+      "velocity_y": "velocity_y.npy",
+      "velocity_z": "velocity_z.npy",
+      "metallicity": "metallicity.npy",
+      "internal_energy": "internal_energy.npy",
+      "XHII": "scalar_01.npy"
+    },
+    "output_variables": [
+      "density",
+      "velocity_x",
+      "velocity_y",
+      "velocity_z",
+      "pressure",
+      "metallicity",
+      "internal_energy",
+      "scalar_01"
+    ],
+    "aexp": 0.125
+  },
+  "particle": {
+    "binary_files": {
+      "position": "position.bin",
+      "velocity": "velocity.bin",
+      "mass": "mass.bin",
+      "id": "id.bin",
+      "level": "level.bin",
+      "birth_time": "birth_time.bin",
+      "metallicity": "metallicity.bin",
+      "metadata": "metadata.txt"
+    },
+    "pickle_files": {
+      "dm": {
+        "position": "Position.pkl",
+        "velocity": "Velocity.pkl",
+        "mass": "Mass.pkl"
+      },
+      "star": {
+        "position": "Position.pkl",
+        "velocity": "Velocity.pkl",
+        "mass": "Mass.pkl",
+        "metallicity": "Metallicity.pkl",
+        "birth_time": "StarFormationTime.pkl"
+      }
+    },
+    "transform": {
+      "position_center": [
+        131466.60496180426,
+        15105.526179407781,
+        91829.29217856088
+      ],
+      "position_shift_boxlen": 505.0,
+      "default_level": 8
+    }
+  },
+  "time_block": {
+    "noutput": 0,
+    "iout": 0,
+    "ifout": 0,
+    "tout": [],
+    "aout": [],
+    "t": 0.0,
+    "dtold": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "dtnew": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "nstep": 0,
+    "nstep_coarse": 0,
+    "einit": 0.0,
+    "mass_tot_0": 0.0,
+    "rho_tot": 0.0,
+    "omega_m": 0.315,
+    "omega_l": 0.685,
+    "omega_k": 0.0,
+    "omega_b": 0.045,
+    "h0": 67.4,
+    "aexp_ini": 0.01,
+    "boxlen_ini": 1.0,
+    "aexp": 0.01,
+    "hexp": 0.0,
+    "aexp_old": 0.01,
+    "epot_tot_int": 0.0,
+    "epot_tot_old": 0.0,
+    "mass_sph": 0.0
+  },
+  "coarse_block": {
+    "ncoarse_level": 1,
+    "flag1_1": 1,
+    "cpu_map": 1
+  },
+  "info_block": {
+    "levelmin": 6,
+    "H0": 0.6736,
+    "omega_m": 0.3153,
+    "omega_l": 0.6847,
+    "omega_k": 0.0,
+    "omega_b": 0.0493,
+    "boxlen_info": 1.0,
+    "time": 34.5500387361225,
+    "aexp_info": 0.125,
+    "unit_l": 3.085677581282e+21,
+    "unit_m": 1.989e+42,
+    "unit_v": 100000.0
+  }
+}

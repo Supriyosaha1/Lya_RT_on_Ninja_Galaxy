@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -N ss_photons
+#PBS -q serial
+#PBS -l select=1:ncpus=1:mem=4gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+: "${VALIDATION_ROOT:?}" "${PHOTON_LABEL:?}"
+RUN="$VALIDATION_ROOT/photons/$PHOTON_LABEL"
+LOG="$VALIDATION_ROOT/logs/photons_${PHOTON_LABEL}_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+date
+echo "PBS_JOBID=$PBS_JOBID PHOTON_LABEL=$PHOTON_LABEL HOST=$(hostname)"
+test ! -e "$RUN/Cont.IC" || { echo "ERROR: refusing existing photon file" >&2; exit 2; }
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module purge
+module load gcc_7
+cd "$RUN"
+/user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/PhotonsFromSourceModel PPIC.cfg
+test -s Cont.IC
+date
+

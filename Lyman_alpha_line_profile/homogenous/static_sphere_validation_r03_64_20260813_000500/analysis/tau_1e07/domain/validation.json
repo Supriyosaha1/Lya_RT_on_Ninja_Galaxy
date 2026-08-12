@@ -1,0 +1,64 @@
+{
+  "case": "tau_1e07",
+  "center": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "column_cm2": {
+    "max": 1.7052338448346132e+19,
+    "mean": 1.705233844834613e+19,
+    "min": 1.7052338448346132e+19,
+    "std": 2048.0
+  },
+  "domain_type": "sphere",
+  "level_max": 6,
+  "level_min": 6,
+  "ncell": 44425,
+  "ncoarse": 1,
+  "ndust_cm3": {
+    "max": 0.0,
+    "mean": 0.0,
+    "min": 0.0,
+    "std": 0.0
+  },
+  "nhi_cm3": {
+    "max": 0.01842095509458189,
+    "mean": 0.018420955094581894,
+    "min": 0.01842095509458189,
+    "std": 3.469446951953614e-18
+  },
+  "nleaf": 33696,
+  "noct": 5553,
+  "radius": 0.3,
+  "ray_count": 38,
+  "relative_tau_error": 0.0,
+  "selected_leaf_count": 33696,
+  "speed_cm_s": {
+    "max": 0.0,
+    "mean": 0.0,
+    "min": 0.0,
+    "std": 0.0
+  },
+  "status": "PASSED",
+  "tau0_measured": {
+    "max": 10000000.0,
+    "mean": 10000000.0,
+    "min": 10000000.0,
+    "std": 0.0
+  },
+  "tau0_requested": 10000000.0,
+  "temperature_K": {
+    "max": 100.00000000000003,
+    "mean": 100.00000000000001,
+    "min": 100.00000000000003,
+    "std": 1.4210854715202004e-14
+  },
+  "vturb_cm_s": {
+    "max": 0.0,
+    "mean": 0.0,
+    "min": 0.0,
+    "std": 0.0
+  },
+  "xhii_validation": "Not stored in mesh; upstream RAMSES scalar_01 validated as zero."
+}

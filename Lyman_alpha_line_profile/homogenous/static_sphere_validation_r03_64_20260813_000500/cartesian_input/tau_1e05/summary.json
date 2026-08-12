@@ -1,0 +1,116 @@
+{
+  "axis_order": "array[x,y,z] sampled by converter as field[ix,iy,iz]",
+  "c_contiguous": true,
+  "case": "tau_1e05",
+  "converter_density_factor": 232.31332351999998,
+  "dtype": "float64",
+  "fields": {
+    "density": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 2.577739764233766e-08,
+      "mean": 2.577739764233768e-08,
+      "min": 2.577739764233766e-08,
+      "shape_ok": true
+    },
+    "internal_energy": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 1.0152911700772016,
+      "mean": 1.0152911700772016,
+      "min": 1.0152911700772016,
+      "shape_ok": true
+    },
+    "metallicity": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "shape_ok": true
+    },
+    "pressure": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 1.7447709475889535e-08,
+      "mean": 1.744770947588953e-08,
+      "min": 1.7447709475889535e-08,
+      "shape_ok": true
+    },
+    "scalar_01": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "shape_ok": true
+    },
+    "velocity_x": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "shape_ok": true
+    },
+    "velocity_y": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "shape_ok": true
+    },
+    "velocity_z": {
+      "c_contiguous": true,
+      "dtype_ok": true,
+      "finite": true,
+      "homogeneous": true,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "shape_ok": true
+    }
+  },
+  "full_cube_homogeneous": true,
+  "gamma": 1.6666666666666667,
+  "physics": {
+    "a_voigt": 0.0047187295446605125,
+    "delta_nu_d_hz": 10565404406.35127,
+    "density_cartesian": 2.577739764233766e-08,
+    "density_ramses": 5.988432917988073e-06,
+    "internal_energy": 1.0152911700772016,
+    "mu_neutral": 1.2195121951219512,
+    "nhi_cm3": 0.00018420955094581884,
+    "nhi_column_cm2": 1.705233844834613e+17,
+    "pressure_cartesian_diagnostic": 1.7447709475889535e-08,
+    "pressure_over_density": 0.6768607800514678,
+    "pressure_ramses": 4.053335376155294e-06,
+    "radius_cm": 9.257032743846001e+20,
+    "scale_T2_K": 121.14751277768644,
+    "sigma0_cm2": 5.864298336730396e-13,
+    "tau0": 100000.0,
+    "vth_cm_s": 128440.4517466905,
+    "x_peak_approx": 7.248108898998725
+  },
+  "pressure_npy_used_by_converter": false,
+  "shape": [
+    64,
+    64,
+    64
+  ]
+}
