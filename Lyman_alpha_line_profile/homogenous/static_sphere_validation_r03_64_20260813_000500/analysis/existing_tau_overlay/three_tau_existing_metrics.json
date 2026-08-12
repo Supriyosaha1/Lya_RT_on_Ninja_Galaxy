@@ -1,0 +1,31 @@
+{
+  "bin_width_x": 0.5,
+  "cases": {
+    "tau_1e05": {
+      "analytic_peak_abs_x_approx": 7.248108898998725,
+      "l1_difference": 0.11329040252566203,
+      "n_escaped": 100000,
+      "n_total": 100000,
+      "normalization": 0.9999999999999999,
+      "photon_label": "smoke"
+    },
+    "tau_1e06": {
+      "analytic_peak_abs_x_approx": 15.615577249131654,
+      "l1_difference": 0.06491871451908462,
+      "n_escaped": 100000,
+      "n_total": 100000,
+      "normalization": 1.0,
+      "photon_label": "smoke"
+    },
+    "tau_1e07": {
+      "analytic_peak_abs_x_approx": 33.64274133040189,
+      "l1_difference": 0.04462490740041375,
+      "n_escaped": 100000,
+      "n_total": 100000,
+      "normalization": 1.0,
+      "photon_label": "smoke"
+    }
+  },
+  "input_x": 0.0,
+  "photons_per_case": 100000
+}

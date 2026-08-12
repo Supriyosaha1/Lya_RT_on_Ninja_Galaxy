@@ -21,5 +21,6 @@ module load gcc_7
 cd "$RUN"
 /user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/PhotonsFromSourceModel PPIC.cfg
 test -s Cont.IC
+/user1/supriyo/miniconda3/envs/rascas-env/bin/python \
+  "$VALIDATION_ROOT/analysis/validate_photons.py" "$PHOTON_LABEL"
 date
-

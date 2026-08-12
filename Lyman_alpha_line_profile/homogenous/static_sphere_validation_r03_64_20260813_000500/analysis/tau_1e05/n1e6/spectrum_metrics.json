@@ -1,0 +1,26 @@
+{
+  "analytic_normalization": 0.9999999999999999,
+  "analytic_peak_abs_x_approx": 7.248108898998725,
+  "blue_peak_x": 7.25,
+  "case": "tau_1e05",
+  "center_probability_abs_x_lt_1": 0.000641,
+  "chi_bins": 62,
+  "chi_like": 78028.18037398279,
+  "l1_difference": 0.11242955097074882,
+  "mc_normalization": 1.0,
+  "mean_scatterings": 99621.751291,
+  "n_escaped": 1000000,
+  "n_total": 1000000,
+  "peak_separation_x": 14.5,
+  "red_blue_count_ratio": 0.999356207301249,
+  "red_peak_x": -7.25,
+  "rms_difference": 0.001680475068672058,
+  "stage": "n1e6",
+  "status_counts": {
+    "1": 1000000
+  },
+  "symmetry_fraction": 0.000322,
+  "tau0": 100000.0,
+  "x_max": 20.82224210194475,
+  "x_min": -21.026470806688213
+}

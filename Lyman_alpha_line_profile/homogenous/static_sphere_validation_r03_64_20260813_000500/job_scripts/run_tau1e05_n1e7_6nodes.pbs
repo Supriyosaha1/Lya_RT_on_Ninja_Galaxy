@@ -1,0 +1,51 @@
+#!/bin/bash
+#PBS -N t1e5_n1e7_6n
+#PBS -q mpi
+#PBS -l select=6:ncpus=32:mpiprocs=32
+#PBS -l place=scatter
+#PBS -l walltime=12:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+
+ROOT=/user1/supriyo/Lya_RT_on_Ninja_Galaxy/Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500
+RUN="$ROOT/rascas_run/tau_1e05/n1e7"
+RESULT="$RUN/Cont.res"
+LOG="$ROOT/logs/rascas_tau_1e05_n1e7_6nodes_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+
+date
+echo "PBS_JOBID=$PBS_JOBID tau0=100000 photons=10000000 HOST=$(hostname)"
+echo "Requested nodes=6 ranks=192 (32 ranks per node)"
+test -f "$PBS_NODEFILE"
+test -s "$RUN/Cont.cfg"
+test -s "$ROOT/domain/tau_1e05/domain_1.mesh"
+test -s "$ROOT/photons/n1e7/Cont.IC"
+test ! -e "$RESULT" || { echo "ERROR: refusing existing $RESULT" >&2; exit 2; }
+
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module purge
+module load gcc_7
+cp "$PBS_NODEFILE" "$RUN/hosts.6nodes"
+NPROCS=$(wc -l < "$RUN/hosts.6nodes")
+NNODES=$(sort -u "$RUN/hosts.6nodes" | wc -l)
+test "$NPROCS" -eq 192 || { echo "ERROR: expected 192 MPI slots, got $NPROCS" >&2; exit 3; }
+test "$NNODES" -eq 6 || { echo "ERROR: expected 6 distinct nodes, got $NNODES" >&2; exit 3; }
+echo "Confirmed allocated nodes=$NNODES MPI ranks=$NPROCS"
+
+export I_MPI_FABRICS=shm:ofi
+export FI_PROVIDER=tcp
+export FI_TCP_IFACE=p3p2
+export I_MPI_HYDRA_IFACE=p3p2
+cd "$RUN"
+mpirun -genv I_MPI_FABRICS "$I_MPI_FABRICS" \
+  -genv FI_PROVIDER "$FI_PROVIDER" \
+  -genv FI_TCP_IFACE "$FI_TCP_IFACE" \
+  -np "$NPROCS" --hostfile "$RUN/hosts.6nodes" \
+  /user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/rascas Cont.cfg
+
+test -s "$RESULT"
+ls -lh "$RESULT"
+date

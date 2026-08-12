@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N t1e5_analyze
+#PBS -q serial
+#PBS -l select=1:ncpus=1:mem=32gb
+#PBS -l walltime=02:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+: "${VALIDATION_ROOT:?}"
+LOG="$VALIDATION_ROOT/logs/analyze_tau_1e05_photon_counts_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+
+date
+echo "PBS_JOBID=$PBS_JOBID HOST=$(hostname)"
+for label in n1e5 n1e6 n1e7; do
+  test -s "$VALIDATION_ROOT/rascas_run/tau_1e05/$label/Cont.res"
+done
+/user1/supriyo/miniconda3/envs/rascas-env/bin/python \
+  "$VALIDATION_ROOT/analysis/compare_tau1e5_photon_counts.py"
+date

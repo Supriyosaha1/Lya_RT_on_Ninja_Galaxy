@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -N submit_t1e7_n1e8
+#PBS -q serial
+#PBS -l select=1:ncpus=1:mem=1gb
+#PBS -l walltime=00:10:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+
+ROOT=/user1/supriyo/Lya_RT_on_Ninja_Galaxy/Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500
+LOG="$ROOT/logs/submit_tau_1e07_n1e8_${PBS_JOBID}.log"
+JOB_ID_FILE="$ROOT/logs/tau_1e07_n1e8_transport_job_id.txt"
+exec >"$LOG" 2>&1
+
+date
+echo "PBS_JOBID=$PBS_JOBID HOST=$(hostname)"
+test -s "$ROOT/photons/n1e8/Cont.IC"
+test -s "$ROOT/photons/n1e8/validation.json"
+test ! -e "$ROOT/rascas_run/tau_1e07/n1e8/Cont.res"
+test ! -e "$JOB_ID_FILE"
+
+TRANSPORT_JOB=$(/opt/pbs/bin/qsub \
+  -o "$ROOT/logs/pbs_rascas_tau_1e07_n1e8.out" \
+  "$ROOT/job_scripts/run_tau1e07_n1e8_8nodes.pbs")
+printf '%s\n' "$TRANSPORT_JOB" > "$JOB_ID_FILE"
+echo "Submitted eight-node transport job $TRANSPORT_JOB"
+date

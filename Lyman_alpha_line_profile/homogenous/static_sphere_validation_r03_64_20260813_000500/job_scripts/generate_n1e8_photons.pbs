@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -N ss_phot_n1e8
+#PBS -q serial
+#PBS -l select=1:ncpus=1:mem=32gb
+#PBS -l walltime=06:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+
+ROOT=/user1/supriyo/Lya_RT_on_Ninja_Galaxy/Lyman_alpha_line_profile/homogenous/static_sphere_validation_r03_64_20260813_000500
+RUN="$ROOT/photons/n1e8"
+OUTPUT="$RUN/Cont.IC"
+LOG="$ROOT/logs/photons_n1e8_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+
+date
+echo "PBS_JOBID=$PBS_JOBID HOST=$(hostname)"
+echo "nPhotonPackets=100000000"
+test -s "$RUN/PPIC.cfg"
+test ! -e "$OUTPUT" || { echo "ERROR: refusing existing $OUTPUT" >&2; exit 2; }
+
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module purge
+module load gcc_7
+cd "$RUN"
+/user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/PhotonsFromSourceModel PPIC.cfg
+test -s "$OUTPUT"
+ls -lh "$OUTPUT"
+/user1/supriyo/miniconda3/envs/rascas-env/bin/python \
+  "$ROOT/analysis/validate_photons.py" n1e8
+date

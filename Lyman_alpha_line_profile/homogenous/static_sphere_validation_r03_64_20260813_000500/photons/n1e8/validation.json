@@ -1,0 +1,16 @@
+{
+  "direction_norm_max": 1.0000000000000002,
+  "direction_norm_min": 0.9999999999999998,
+  "finite_frequency": true,
+  "frequency_max": 2466067748648893.0,
+  "frequency_min": 2466067748648893.0,
+  "ids_sequential_and_unique": true,
+  "n_file": 100000000,
+  "n_requested": 100000000,
+  "packet_seed_count": 100000000,
+  "positions_central": true,
+  "real_photon_rate": 1.0,
+  "seed": -20260813,
+  "status": "PASSED",
+  "velocities_zero": true
+}

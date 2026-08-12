@@ -1,0 +1,47 @@
+#!/bin/bash
+#PBS -N t1e5_nconv
+#PBS -q mpi
+#PBS -l select=2:ncpus=32:mpiprocs=32
+#PBS -l place=scatter
+#PBS -l walltime=12:00:00
+#PBS -j oe
+
+set -euo pipefail
+export LC_ALL=C
+export LANG=C
+: "${VALIDATION_ROOT:?}" "${PHOTON_LABEL:?}"
+
+RUN="$VALIDATION_ROOT/rascas_run/tau_1e05/$PHOTON_LABEL"
+RESULT="$RUN/Cont.res"
+LOG="$VALIDATION_ROOT/logs/rascas_tau_1e05_${PHOTON_LABEL}_${PBS_JOBID}.log"
+exec >"$LOG" 2>&1
+
+date
+echo "PBS_JOBID=$PBS_JOBID tau0=100000 PHOTON_LABEL=$PHOTON_LABEL HOST=$(hostname)"
+test -f "$PBS_NODEFILE"
+test -s "$RUN/Cont.cfg"
+test -s "$VALIDATION_ROOT/domain/tau_1e05/domain_1.mesh"
+test ! -e "$RESULT" || { echo "ERROR: refusing existing $RESULT" >&2; exit 2; }
+
+source /etc/profile.d/modules.sh 2>/dev/null || true
+module purge
+module load gcc_7
+cp "$PBS_NODEFILE" "$RUN/hosts"
+NPROCS=$(wc -l < "$RUN/hosts")
+NNODES=$(sort -u "$RUN/hosts" | wc -l)
+test "$NPROCS" -eq 64 || { echo "ERROR: expected 64 MPI slots, got $NPROCS" >&2; exit 3; }
+test "$NNODES" -eq 2 || { echo "ERROR: expected 2 nodes, got $NNODES" >&2; exit 3; }
+
+export I_MPI_FABRICS=shm:ofi
+export FI_PROVIDER=tcp
+export FI_TCP_IFACE=p3p2
+export I_MPI_HYDRA_IFACE=p3p2
+cd "$RUN"
+mpirun -genv I_MPI_FABRICS "$I_MPI_FABRICS" \
+  -genv FI_PROVIDER "$FI_PROVIDER" \
+  -genv FI_TCP_IFACE "$FI_TCP_IFACE" \
+  -np "$NPROCS" --hostfile "$RUN/hosts" \
+  /user1/supriyo/Lya_RT_on_Ninja_Galaxy/rascas/f90/rascas Cont.cfg
+test -s "$RESULT"
+ls -lh "$RESULT"
+date

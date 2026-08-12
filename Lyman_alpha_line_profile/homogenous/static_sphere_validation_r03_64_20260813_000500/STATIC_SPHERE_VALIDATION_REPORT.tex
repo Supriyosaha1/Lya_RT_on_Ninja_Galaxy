@@ -1,0 +1,750 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs,longtable,array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,urlcolor=blue!55!black,citecolor=blue!55!black}
+\graphicspath{{./}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\pagestyle{fancy}
+\setlength{\headheight}{14pt}
+\fancyhf{}
+\lhead{Cartesian-to-RASCAS static-sphere validation}
+\rhead{\thepage}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,columns=fullflexible}
+
+\newcommand{\lya}{Ly$\alpha$}
+\newcommand{\tauzero}{\tau_0}
+\newcommand{\av}{a_{\rm v}}
+\newcommand{\nhi}{n_{\rm HI}}
+\newcommand{\kms}{\mathrm{km\,s^{-1}}}
+
+\title{Detailed Validation of a Cartesian-to-RAMSES-Octree-to-RASCAS Pipeline\\
+against the Analytical Homogeneous Static-Sphere \lya\ Solution}
+\author{Reproducible workflow note}
+\date{13 August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+I construct a homogeneous, static, neutral-hydrogen sphere at $T=100$ K in a
+$64^3$ Cartesian array, convert it to the RAMSES octree binary format, create a
+spherical RASCAS domain of radius $0.3$ box units, emit monochromatic central
+\lya\ photon packets, and compare the escaped spectra with the analytical
+static-sphere solution.  I test centre-to-surface optical depths
+$\tauzero=10^5,10^6,$ and $10^7$.  The pipeline is validated independently at
+the Cartesian, RAMSES, RASCAS-domain, photon-input, and escaped-photon stages.
+The peak locations, double-peaked morphology, normalization, and red--blue
+symmetry agree with theory.  The normalized full-profile $L_1$ difference
+improves from $0.1124$ at $\tauzero=10^5$ (one million photons) to $0.0649$ at
+$10^6$ and $0.0446$ at $10^7$ (one hundred thousand photons each), consistent
+with the increasing validity of the analytical diffusion approximation as
+$\av\tauzero$ increases.  This document explains every physical choice,
+conversion factor, binary interface, calculation, plot, discrepancy, and
+acceptance decision step by step.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Purpose and validation philosophy}
+
+My aim is not merely to produce a double-peaked spectrum.  I want to demonstrate
+that the same physical problem survives the complete chain
+\begin{align*}
+\text{physical target}&\longrightarrow \text{Cartesian NumPy fields}
+\longrightarrow \text{RAMSES octree files}\\
+&\longrightarrow \text{RASCAS spherical domain}
+\longrightarrow \text{Monte Carlo photons}
+\longrightarrow \text{escaped spectrum}.
+\end{align*}
+At each arrow I perform an independent check.  This is important because a
+plausible spectrum could still be produced with a wrong unit conversion, a
+reversed ionization field, an incorrect field index, a temperature error, or a
+diameter optical depth used where the analytical formula expects a radius
+optical depth.
+
+I use three optical-depth cases.  The $10^5$ case is a useful diagnostic but is
+not deep in the asymptotic diffusion regime.  The $10^6$ and $10^7$ cases are
+the stronger analytical tests.  For the initial controlled comparison I use
+$10^5$ photon packets in each optical-depth case.  I additionally run
+$10^6$ packets at $\tauzero=10^5$ to show which differences are Monte Carlo
+noise and which are systematic profile-shape differences.
+
+\section{Definition of the physical experiment}
+
+\subsection{Geometry and gas state}
+
+I choose a homogeneous sphere centred at
+\[
+\bm{x}_{\rm c}=(0.5,0.5,0.5)
+\]
+inside a unit computational box.  The spherical boundary radius is
+\[
+R=0.3\,L_{\rm box}.
+\]
+The code length unit is one kiloparsec,
+\[
+L_{\rm box}=\mathrm{unit\_l}=3.085677581282\times10^{21}\ \mathrm{cm},
+\]
+and therefore
+\[
+R=9.257032743846\times10^{20}\ \mathrm{cm}=0.3\ \mathrm{kpc}.
+\]
+
+I set $T=100$ K and use primordial hydrogen mass fraction $X_{\rm H}=0.76$.
+The gas has zero bulk velocity, zero turbulent velocity, zero metallicity,
+zero dust, and zero ionized fraction.  Cosmological expansion, recoil, and
+helium-ion fields are absent.  The source is a point at the sphere centre,
+with zero source velocity, emitting monochromatic photons at
+$\lambda_\alpha=1215.67$ \AA.  Scattering is isotropic.
+
+These choices isolate the basic resonant-transfer physics.  With no preferred
+direction or velocity, the escaped spectrum must be symmetric about line
+centre.  Any persistent red--blue asymmetry would be evidence of a numerical,
+geometrical, or interface problem.
+
+\subsection{Optical-depth convention}
+
+I define the line-centre optical depth from the centre to the spherical surface:
+\begin{equation}
+\tauzero=\nhi\,\sigma_0(T)\,R.
+\label{eq:tau}
+\end{equation}
+It is not the optical depth across the diameter.  This convention must match
+the analytical solution and the RASCAS escape boundary.  Using $2R$ by mistake
+would shift the expected peaks by $2^{1/3}$ and would be a genuine physics
+failure.
+
+\section{Atomic constants and thermodynamic quantities}
+
+\subsection{RASCAS-compatible line quantities}
+
+I calculate the constants from the installed RASCAS atomic definition rather
+than inserting rounded textbook values.  The adopted values are
+\[
+m_{\rm ion}=1.008\,m_{\rm u},\qquad f_{12}=0.416,\qquad
+A_{21}=6.265\times10^8\ \mathrm{s^{-1}}.
+\]
+At temperature $T$, the hydrogen thermal speed and Doppler width are
+\begin{align}
+v_{\rm th} &= \sqrt{\frac{2k_{\rm B}T}{m_{\rm ion}}},\\
+\Delta\nu_D &= \frac{v_{\rm th}}{\lambda_\alpha}.
+\end{align}
+At 100 K I obtain
+\[
+v_{\rm th}=1.2844045175\ \kms,
+\qquad
+\Delta\nu_D=1.0565404406\times10^{10}\ \mathrm{Hz}.
+\]
+The Voigt damping parameter is
+\begin{equation}
+\av=\frac{A_{21}}{4\pi\Delta\nu_D}
+=4.7187295447\times10^{-3}.
+\end{equation}
+
+The line-centre cross-section is evaluated with the same COLT approximation
+to $H(\av,0)$ that is used by the installed RASCAS source:
+\begin{equation}
+\sigma_0 = \frac{\sqrt{\pi}e^2 f_{12}}{m_e c\,\Delta\nu_D}
+H(\av,0)
+=5.8642983367\times10^{-13}\ \mathrm{cm^2}.
+\end{equation}
+Matching this convention matters because a small cross-section mismatch becomes
+a direct optical-depth mismatch.
+
+\subsection{Temperature in code units}
+
+The velocity and density units are
+\[
+\mathrm{unit\_v}=10^5\ \mathrm{cm\,s^{-1}},\qquad
+\mathrm{unit\_d}=6.7699139342702\times10^{-23}\ \mathrm{g\,cm^{-3}}.
+\]
+For neutral primordial gas I use
+\begin{equation}
+\mu=\frac{1}{X_{\rm H}+(1-X_{\rm H})/4}=1.2195121951.
+\end{equation}
+The RAMSES temperature conversion is
+\begin{equation}
+T=\frac{P}{\rho}\,\mu\frac{m_p}{k_B}\,\mathrm{unit\_v}^2.
+\end{equation}
+Therefore the required pressure-to-density ratio at 100 K is
+\[
+\frac{P}{\rho}=0.6768607801.
+\]
+For $\gamma=5/3$ and $P=(\gamma-1)\rho u$, the internal energy field is
+\begin{equation}
+u=\frac{P/\rho}{\gamma-1}=1.0152911701.
+\label{eq:u}
+\end{equation}
+
+\section{Choosing the density for each optical depth}
+
+I rearrange \ref{eq:tau} to obtain
+\begin{equation}
+\nhi=\frac{\tauzero}{\sigma_0 R}.
+\end{equation}
+The corresponding RAMSES dimensionless mass density is
+\begin{equation}
+\rho_{\rm RAMSES}=\frac{\nhi m_p}{X_{\rm H}\,\mathrm{unit\_d}}.
+\label{eq:rhoramses}
+\end{equation}
+
+\subsection{Mandatory converter density multiplier}
+
+The Cartesian converter does not write its input density unchanged.  It applies
+the built-in multiplier
+\begin{equation}
+F_\rho=\frac{h_0^2}{a_{\rm exp}^3}
+=\frac{0.6736^2}{0.125^3}
+=232.31332352.
+\label{eq:factor}
+\end{equation}
+Although this factor has a cosmological form, I leave the converter unchanged.
+I compensate for it in the input array:
+\begin{equation}
+\rho_{\rm Cartesian}=\frac{\rho_{\rm RAMSES}}{F_\rho}.
+\label{eq:cartdensity}
+\end{equation}
+If I inserted the desired RAMSES density directly into the NumPy array, the
+converted gas would be too dense and $\tauzero$ would be too large by a factor
+of approximately 232.3.
+
+\begin{table}[ht]
+\centering
+\caption{Densities derived without fitting or post-conversion rescaling.}
+\label{tab:density}
+\begin{tabular}{rrrr}
+\toprule
+$\tauzero$ & $\nhi$ [$\mathrm{cm^{-3}}$] & $\rho_{\rm Cartesian}$ & $\rho_{\rm RAMSES}$\\
+\midrule
+$10^5$ & $1.8420955095\times10^{-4}$ & $2.5777397642\times10^{-8}$ & $5.9884329180\times10^{-6}$\\
+$10^6$ & $1.8420955095\times10^{-3}$ & $2.5777397642\times10^{-7}$ & $5.9884329180\times10^{-5}$\\
+$10^7$ & $1.8420955095\times10^{-2}$ & $2.5777397642\times10^{-6}$ & $5.9884329180\times10^{-4}$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Step 1: constructing the Cartesian fields}
+
+For every optical depth I make C-contiguous NumPy \texttt{float64} arrays of
+shape $(64,64,64)$.  I use the axis order \texttt{array[x,y,z]}, which is the
+order sampled by the converter.  I fill the complete cube homogeneously; I do
+not apply a spherical mask at this stage.  The sphere is imposed later as the
+exact RASCAS computational boundary.
+
+The fields are
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+File & Assigned value\\
+\midrule
+\texttt{density.npy} & case-dependent value in \ref{tab:density}\\
+\texttt{velocity\_x.npy}, \texttt{velocity\_y.npy}, \texttt{velocity\_z.npy} & exactly zero\\
+\texttt{metallicity.npy} & exactly zero\\
+\texttt{internal\_energy.npy} & $1.0152911701$\\
+\texttt{scalar\_01.npy} & $x_{\rm HII}=0$ exactly\\
+\texttt{pressure.npy} & diagnostic only; ignored by the converter\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The converter derives pressure internally as
+\begin{equation}
+P=(\gamma-1)\rho u,
+\end{equation}
+so the saved pressure array is only a human-readable diagnostic.  After writing
+each field I reload it from disk and check shape, dtype, C-contiguity, finiteness,
+homogeneity, exact zeros, and min/max/mean.  Central-slice images are constant,
+as required for a homogeneous experiment.
+
+\section{Step 2: converting the Cartesian cube to a RAMSES octree}
+
+I pass a validation-owned JSON configuration with \texttt{--config}; I do not
+modify the converter's original configuration.  I run only the AMR and hydro
+writers because particles are neither present nor required by
+\texttt{CreateDomDump}.
+
+The AMR metadata uses
+\[
+\texttt{levelmin}=\texttt{levelmax}=6,\qquad \texttt{boxlen}=1.
+\]
+The converter records the normal hierarchy through levels 1--6, but every
+physical leaf is at level 6.  A level-6 uniform mesh has
+\[
+2^6\times2^6\times2^6=64^3=262,144
+\]
+leaf cells.  This exact count is recovered by the trusted RAMSES reader and
+\texttt{yt} for all three cases.
+
+The hydro field order written and later read is density, three velocity
+components, pressure, metallicity, internal energy, and
+\texttt{scalar\_01}.  I explicitly verify the field order because using
+\texttt{itemp}, \texttt{imetal}, or \texttt{ihii} with the wrong positions
+could produce a physically plausible but incorrect RASCAS mesh.
+
+The converted validations recover
+\begin{itemize}
+\item exactly 262,144 level-6 leaves;
+\item homogeneous case-dependent density after the factor in \ref{eq:factor};
+\item $u=1.0152911701$ and the derived pressure;
+\item $T=100$ K to floating-point accuracy;
+\item exactly zero velocity, metallicity, and \texttt{scalar\_01}.
+\end{itemize}
+
+\section{Step 3: creating and validating the RASCAS spherical domain}
+
+I run \texttt{CreateDomDump} with a sphere centred at $(0.5,0.5,0.5)$ and
+radius 0.3.  The important reader settings are
+\[
+\texttt{ramses\_rt=T},\quad \texttt{itemp=5},\quad
+\texttt{imetal=6},\quad \texttt{ihii=8},
+\]
+with absent helium ion fields set to zero, \texttt{cosmo=F},
+\texttt{vturb\_kms=0}, and \texttt{ignoreDust=T}.
+
+The mesh dump does not retain $x_{\rm HII}$ itself.  I therefore validate
+$\texttt{scalar\_01}=0$ upstream in RAMSES, then check downstream that the
+dumped $\nhi$ equals the expected total hydrogen density.  Each domain contains
+33,696 selected level-6 leaves in 5,553 octs.
+
+I calculate columns along the six Cartesian axes and 32 reproducibly seeded
+random rays.  Every ray begins at the source and is clipped at the exact
+spherical boundary.  For a uniform sphere,
+\begin{equation}
+N_{\rm HI}=\int_0^R \nhi\,ds=\nhi R,
+\qquad
+\tauzero^{\rm measured}=\sigma_0 N_{\rm HI}.
+\end{equation}
+All 38 rays recover the requested optical depth to floating-point precision,
+without density fitting or rescaling.  The dumped temperature is 100 K and
+speed, turbulence, and dust density are exactly zero.
+
+\section{Step 4: constructing and validating photon packets}
+
+I use \texttt{PhotonsFromSourceModel} to create unformatted sequential Fortran
+files.  Every packet has
+\begin{itemize}
+\item source position $(0.5,0.5,0.5)$;
+\item source velocity $(0,0,0)$;
+\item an isotropically sampled unit direction;
+\item wavelength 1215.67 \AA, corresponding to a single finite line-centre
+frequency;
+\item deterministic global seed $-20260813$ and an individual packet seed.
+\end{itemize}
+
+The photon input file contains records in this order: packet count, represented
+real-photon rate, global seed, packet IDs, frequencies, positions, directions,
+packet seeds, and source velocities.  My streaming validator checks the leading
+and trailing Fortran record markers and supports logical records larger than
+2 GiB.  It confirms the exact packet count, sequential unique IDs, central
+positions, zero velocities, monochromatic finite frequencies, and unit direction
+norms.
+
+\section{Step 5: RASCAS transport assumptions}
+
+RASCAS reads the validated spherical domain and photon file.  I use isotropic
+HI scattering, no recoil, no dust, no bulk velocity, and no turbulent velocity.
+I set \texttt{nDirections=0}; therefore the reported spectrum is made directly
+from all successfully escaped packets and has no viewing-cone selection.
+Because the problem is spherical and static, this is the natural angle-integrated
+comparison with the analytical solution.
+
+Core skipping is enabled with \texttt{xcritmax=3}.  This accelerates the very
+large number of nearly local line-core scatterings and makes the high-optical-
+depth experiments practical.  It is an explicitly documented approximation.
+It should preserve the main escape spectrum when used appropriately, but at the
+lowest $\av\tauzero$ it can be one contributor to small trough, width, or wing
+differences.  I do not treat core skipping as a proven explanation for every
+residual; the main known limitation at $\tauzero=10^5$ is the asymptotic nature
+of the analytical expression itself.
+
+\section{Reading the RASCAS result binary}
+
+The escaped result \texttt{Cont.res} is also an unformatted sequential Fortran
+file.  I read the following records in their written order:
+\begin{enumerate}
+\item total packet count;
+\item packet IDs;
+\item terminal status flags;
+\item final positions;
+\item external-frame frequencies $\nu$;
+\item final propagation directions;
+\item scattering counts;
+\item propagation times.
+\end{enumerate}
+Only \texttt{status=1} packets enter the escaped spectrum.  I preserve and
+report all status counts, so lost or unfinished packets cannot disappear
+silently.  Every packet in every completed comparison reported here has status 1.
+
+\section{Analytical static-sphere spectrum}
+
+\subsection{Dimensionless frequency}
+
+I convert each escaped external-frame frequency to Doppler units:
+\begin{equation}
+x=\frac{\nu-\nu_\alpha}{\Delta\nu_D},
+\qquad
+\nu_\alpha=\frac{c}{\lambda_\alpha}.
+\label{eq:x}
+\end{equation}
+With this frequency convention, $x<0$ is red and $x>0$ is blue.  A wavelength
+offset would have the opposite sign near line centre, so I never mix the two
+conventions.
+
+\subsection{Analytical equation and normalization}
+
+For a homogeneous static sphere I evaluate
+\begin{equation}
+J(x)=\sqrt{\frac{\pi}{6}}\frac{1}{4\av\tauzero}
+\frac{x^2}{1+\cosh\!\left[
+\sqrt{\frac{2\pi^3}{27}}\frac{|x|^3}{\av\tauzero}
+\right]}.
+\label{eq:analytic}
+\end{equation}
+The convention in \ref{eq:analytic} satisfies
+\[
+\int_{-\infty}^{\infty}J(x)\,dx=\frac{1}{4\pi}.
+\]
+My Monte Carlo histogram is a unit-area probability density.  The directly
+comparable analytical curve is consequently
+\begin{equation}
+p_{\rm analytic}(x)=4\pi J(x),\qquad
+\int p_{\rm analytic}(x)\,dx=1.
+\end{equation}
+I evaluate the full curve at the histogram-bin centres.  I normalize its sampled
+finite grid only for negligible quadrature truncation; I never change its width,
+optical depth, or amplitude to fit RASCAS.
+
+The approximate peak position is
+\begin{equation}
+|x_{\rm peak}|\simeq0.931(\av\tauzero)^{1/3}.
+\label{eq:peak}
+\end{equation}
+Thus increasing optical depth forces photons farther into the wings before
+escape and increases the peak separation approximately as $\tauzero^{1/3}$.
+
+\section{Constructing the numerical spectrum and uncertainties}
+
+I histogram the escaped $x$ values over $-100\le x\le100$ with bin width
+$\Delta x=0.5$.  If bin $i$ contains $N_i$ packets and the total escaped count
+is $N_{\rm esc}$, I calculate
+\begin{equation}
+p_{{\rm MC},i}=\frac{N_i}{N_{\rm esc}\Delta x},
+\qquad
+\sigma_i=\frac{\sqrt{N_i}}{N_{\rm esc}\Delta x}.
+\label{eq:hist}
+\end{equation}
+Therefore
+\[
+\sum_i p_{{\rm MC},i}\Delta x=1.
+\]
+The raw count is always retained.  A smooth normalized curve alone can hide
+whether a tail bin contains ten photons or ten thousand photons.
+
+My main full-profile statistic is
+\begin{equation}
+L_1=\sum_i|p_{{\rm MC},i}-p_{{\rm analytic},i}|\Delta x.
+\label{eq:l1}
+\end{equation}
+I also measure peak positions, peak separation, integrated red/blue packet
+ratio, symmetry fraction
+\[
+S=\frac{|N_{\rm red}-N_{\rm blue}|}{N_{\rm red}+N_{\rm blue}},
+\]
+central probability $P(|x|<1)$, RMS density difference, mean scattering count,
+and a chi-square-like diagnostic.  The latter is not interpreted as a formal
+$p$-value because the normalized bins are correlated and the analytical
+diffusion solution is approximate.
+
+\section{Meaning of every generated plot}
+
+\begin{description}
+\item[Linear spectrum overlay]
+This is the most direct physical comparison.  It emphasizes peak positions,
+peak heights, widths, the central trough, and the probability-carrying portion
+of the spectrum.  Agreement here is more important than visual agreement at
+probabilities many orders of magnitude below the peak.
+
+\item[Logarithmic spectrum overlay]
+This displays the weak wings and rare events.  It is valuable for finding an
+unexpected long tail, but it visually magnifies tiny absolute differences.
+Bins with zero packets are plotted at a small positive floor so they can appear
+on logarithmic axes; vertical drops to that floor are plotting artifacts, not
+negative probability.  Isolated high tail bins can contain only one or a few
+photons.
+
+\item[Folded red and blue halves]
+I reflect the red half about $x=0$ and compare it with the blue half versus
+$|x|$.  This removes the common double-peaked shape and directly exposes
+directional or frequency-sign asymmetry.  A static sphere should agree within
+Monte Carlo noise.
+
+\item[Absolute residual]
+This shows $p_{\rm MC}-p_{\rm analytic}$.  Positive residuals identify where
+RASCAS assigns more probability, and negative residuals where it assigns less.
+It reveals whether a lower peak is compensated by broader shoulders or wings.
+
+\item[Fractional residual]
+This shows $(p_{\rm MC}-p_{\rm analytic})/p_{\rm analytic}$ only where the
+analytical curve exceeds $10^{-4}$ of its maximum.  Without this mask,
+division by a vanishing analytical tail would create huge but meaningless
+ratios.
+
+\item[Poisson count plot]
+This displays $N_i$ with $\sqrt{N_i}$ error bars.  It is the clearest view of
+the actual Monte Carlo information content and distinguishes statistically
+meaningful discrepancies from sparsely populated tail fluctuations.
+\end{description}
+
+\section{Physical origin of the double-peaked spectrum}
+
+A photon emitted at line centre sees the largest HI cross-section and therefore
+has a very short mean free path.  Repeated resonant scatterings produce coupled
+random walks in position and frequency.  Thermal atomic velocities move a
+photon toward either frequency wing.  In a wing the cross-section is smaller,
+the mean free path is longer, and a sufficiently large frequency excursion can
+carry the photon to the boundary.  Because the gas is static and symmetric,
+red and blue excursions are equally likely.
+
+The expected signatures are consequently a suppressed line centre, two peaks,
+equal integrated red and blue flux, and increasing peak separation with
+$(\av\tauzero)^{1/3}$.  The simulation reproduces every one of these signatures.
+
+\section{Quantitative results}
+
+\begin{table}[ht]
+\centering
+\caption{Angle-integrated RASCAS comparisons.  The first three rows use
+$10^5$ packets; the fourth is the $\tauzero=10^5$ photon-count refinement.}
+\label{tab:results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{rrrrrrrrrr}
+\toprule
+$\tauzero$ & $N_\gamma$ & $\av\tauzero$ & analytic $|x_p|$ & RASCAS $x_{p,r}$ & RASCAS $x_{p,b}$ & separation & red/blue & $S$ & $L_1$\\
+\midrule
+$10^5$ & $10^5$ & 471.873 & 7.2481 & $-7.25$ & 6.75 & 14.0 & 1.00977 & 0.00486 & 0.11329\\
+$10^6$ & $10^5$ & 4718.730 & 15.6156 & $-15.25$ & 15.25 & 30.5 & 1.00337 & 0.00168 & 0.06492\\
+$10^7$ & $10^5$ & 47187.295 & 33.6427 & $-32.75$ & 33.25 & 66.0 & 1.01219 & 0.00606 & 0.04462\\
+$10^5$ & $10^6$ & 471.873 & 7.2481 & $-7.25$ & 7.25 & 14.5 & 0.99936 & 0.000322 & 0.11243\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+All rows have unit Monte Carlo and analytical normalization, and all requested
+packets escape with status 1.  The systematic improvement in $L_1$ with optical
+depth is important: it is the behavior expected if the remaining mismatch is
+mainly the finite-$\av\tauzero$ limitation of an asymptotic analytical solution,
+not a hidden unit error.
+
+\subsection{$\tauzero=10^5$: diagnostic case}
+
+Here $\av\tauzero=471.873$, below the conservative value of roughly $10^3$
+often used to identify the strong wing-diffusion regime.  With $10^5$ photons,
+the measured peaks are $-7.25$ and $+6.75$; the half-bin displacement of the
+blue maximum is compatible with $\Delta x=0.5$ binning and sampling noise.
+The red/blue ratio is 1.00977 and $L_1=0.11329$.
+
+With $10^6$ photons, both maxima lie at $\pm7.25$, essentially exactly matching
+the analytical $|x_p|=7.2481$.  The red/blue ratio improves to 0.999356 and the
+symmetry fraction to $3.22\times10^{-4}$.  However, $L_1$ changes only slightly,
+from 0.11329 to 0.11243.  This is decisive: increasing the sample by a factor of
+ten removes visible noise and improves symmetry, but does not remove the broader
+RASCAS shoulders and wings.  The remaining difference is systematic rather
+than a shortage of photons.
+
+The one-million-packet peak density is approximately 0.0831, compared with
+0.08894 analytically, about 6.7\% lower.  Since both curves have unit area, the
+lower numerical peak is compensated by broader shoulders and heavier tails.
+For example, 48 of the million packets occur at $|x|\ge18$.  These events have
+only $4.8\times10^{-5}$ total probability, yet they appear prominent on a log
+axis.  This explains why the logarithmic plot can look substantially different
+even when the peak positions and the probability-dominating part of the profile
+agree well.
+
+The correct conclusion is therefore ``pass as a lower-$\av\tauzero$
+diagnostic,'' not ``exact asymptotic-profile match.''  The main explanation is
+that \ref{eq:analytic} is a diffusion/wing approximation and
+$\av\tauzero\simeq472$ is marginal.  Finite bin width, the finite $64^3$ mesh,
+and the documented core-skipping acceleration can contribute smaller numerical
+effects.  None of these produces a nonphysical asymmetry or an optical-depth
+shift.
+
+\begin{figure}[p]
+\centering
+\begin{subfigure}{0.98\textwidth}
+\includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{analysis/tau_1e05/n1e6/spectrum_linear.pdf}
+\caption{Linear scale: peak position and overall probability-carrying shape.}
+\end{subfigure}
+\begin{subfigure}{0.98\textwidth}
+\includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{analysis/tau_1e05/n1e6/spectrum_log.pdf}
+\caption{Log scale: rare wings are magnified; isolated tail steps contain very
+few photons.}
+\end{subfigure}
+\caption{$\tauzero=10^5$ with one million photons.}
+\label{fig:t1e5}
+\end{figure}
+
+\subsection{$\tauzero=10^6$: strong analytical validation}
+
+At $\tauzero=10^6$, $\av\tauzero=4718.73$, so the system is well inside the
+high-optical-depth regime.  The analytical peak magnitude is
+$|x_p|=15.6156$.  The RASCAS peaks occur at $-15.25$ and $+15.25$, within one
+$\Delta x=0.5$ bin of the prediction.  The peak separation is 30.5 compared
+with the approximate analytical value $2|x_p|=31.2312$.
+
+The integrated red/blue ratio is 1.00337 and the symmetry fraction is 0.00168.
+Only $5\times10^{-5}$ of packets remain within $|x|<1$, demonstrating the
+expected strong line-centre suppression.  The numerical maximum differs from
+the sampled analytical maximum by about $-1.95$\%, and the full-profile
+$L_1=0.06492$ is comfortably below the validation limit of 0.15.  This is a
+strong pass: location, height, symmetry, normalization, and full shape all
+agree.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.9\textwidth]{analysis/tau_1e06/smoke/spectrum_linear.pdf}
+\caption{$\tauzero=10^6$, 100,000 photons.  This is a stronger analytical test
+because $\av\tauzero\gg10^3$.}
+\label{fig:t1e6}
+\end{figure}
+
+\subsection{$\tauzero=10^7$: strongest completed asymptotic test}
+
+For $\tauzero=10^7$, $\av\tauzero=47187.3$.  The analytical peak position is
+$|x_p|=33.6427$, while RASCAS gives $-32.75$ and $+33.25$.  The numerical
+separation is 66.0 compared with the approximate analytical value 67.2855.
+This difference is small relative to the peak frequency and includes the
+finite histogram-bin resolution.
+
+All 100,000 packets escape.  The red/blue ratio is 1.01219, corresponding to a
+symmetry fraction of 0.00606, statistically reasonable for two halves of a
+100,000-packet sample.  No photon lies within $|x|<1$.  The numerical peak is
+about 4.2\% above the sampled analytical maximum, and $L_1=0.04462$, the best of
+the three optical-depth cases.  This monotonic improvement from $10^5$ to
+$10^7$ is strong evidence that the physical units and optical-depth convention
+are correct.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=0.9\textwidth]{analysis/tau_1e07/smoke/spectrum_linear.pdf}
+\caption{$\tauzero=10^7$, 100,000 photons.  This is the strongest completed
+comparison with the asymptotic analytical solution.}
+\label{fig:t1e7}
+\end{figure}
+
+\section{Monte Carlo noise, binning, and systematic differences}
+
+For independent counts, relative Poisson noise scales approximately as
+$N_i^{-1/2}$ and global Monte Carlo fluctuations scale as $N_\gamma^{-1/2}$.
+Increasing the total packet count from $10^5$ to $10^6$ should reduce random
+noise by roughly $\sqrt{10}\simeq3.16$.  The $\tauzero=10^5$ convergence run
+does exactly what this predicts: red--blue symmetry becomes much tighter and
+the histogram becomes smoother.
+
+Noise reduction does not guarantee convergence to the plotted analytical curve,
+because the analytical curve is not an exact numerical solution for arbitrary
+$\av\tauzero$.  The nearly unchanged $L_1$ at $\tauzero=10^5$ demonstrates a
+systematic difference between the simulation and the asymptotic expression.
+This is physically different from Monte Carlo noise.
+
+The bin width $\Delta x=0.5$ limits peak localization to approximately a bin.
+A reported peak at 6.75 rather than 7.25 in a 100,000-packet histogram does not
+mean the physical peak shifted by a precisely measured 0.5; neighboring bins
+near the smooth maximum can exchange rank because of sampling fluctuations.
+Raw counts and Poisson errors must be inspected before assigning significance.
+
+The far-wing discrepancy looks largest on logarithmic plots.  However, a
+difference between $10^{-8}$ and $10^{-5}$ is visually three decades while
+contributing very little to unit-area $L_1$.  Conversely, a small vertical
+difference across the broad peak can carry much more probability.  I therefore
+use the linear plot, raw counts, $L_1$, peak positions, and symmetry together,
+rather than judging correctness from a log plot alone.
+
+\section{Failure modes explicitly ruled out}
+
+The following possible mistakes are ruled out by direct measurements:
+\begin{itemize}
+\item \textbf{Wrong converter density scaling:} the post-conversion density is
+exactly $232.31332352$ times the Cartesian input and yields the requested $\nhi$.
+\item \textbf{Radius/diameter confusion:} rays integrate from the centre to the
+exact radius $R=0.3$, and measured $\tauzero$ equals the requested value.
+\item \textbf{Wrong temperature:} both RAMSES and domain readers recover 100 K.
+\item \textbf{Wrong ionization convention:} RAMSES \texttt{scalar\_01=xHII=0}
+is verified upstream; RASCAS recovers the expected neutral hydrogen density.
+\item \textbf{Wrong field order:} temperature, metallicity, velocity, and HI
+density are independently checked after reading the generated binaries.
+\item \textbf{Velocity or geometrical asymmetry:} all input velocities are zero,
+the boundary is a centred sphere, and folded red/blue spectra agree statistically.
+\item \textbf{Missing packets:} every completed result has the requested count
+and every packet has successful terminal status 1.
+\item \textbf{Normalization error:} both numerical and analytical spectra
+integrate to unity.
+\item \textbf{Frequency-sign error:} frequency, not wavelength, defines $x$;
+negative $x$ is consistently labeled red.
+\end{itemize}
+
+\section{Overall assessment}
+
+The Cartesian-to-RAMSES-to-RASCAS interface is validated.  The unit conversion,
+temperature, neutral fraction, field order, octree leaf count, spherical
+boundary, and optical depth all pass independent checks.  The transport produces
+the expected symmetric double peak and the expected growth of peak separation
+with optical depth.
+
+The $\tauzero=10^5$ case passes as a diagnostic with finite-diffusion-limit and
+documented acceleration caveats.  Its one-million-photon run proves that the
+remaining broader wings are not simply low photon statistics.  The
+$\tauzero=10^6$ and $10^7$ cases are strong analytical passes, with peak-height
+differences of about 2\% and 4\%, respectively, and $L_1$ values of 0.0649 and
+0.0446.  The improvement with $\av\tauzero$ is physically sensible and supports
+the conclusion that no hidden unit or optical-depth rescaling is required.
+
+\appendix
+\section{Reproducibility map}
+
+The principal machine-readable and plotting files are:
+\begin{itemize}
+\item \texttt{analysis/physics.py}: constants and all physical conversions;
+\item \texttt{cartesian\_input/generate\_cartesian.py}: array generation and reload checks;
+\item \texttt{analysis/validate\_photons.py}: streaming Fortran IC validation;
+\item \texttt{analysis/compare\_spectrum.py}: escaped-result decoding, histogram,
+analytical curve, metrics, CSV, and plots;
+\item \texttt{analysis/<case>/ramses/validation.json}: converted-field checks;
+\item \texttt{analysis/<case>/domain/validation.json}: spherical-domain and ray checks;
+\item \texttt{analysis/<case>/<run>/spectrum\_metrics.json}: numerical comparison;
+\item \texttt{analysis/<case>/<run>/spectrum.csv}: every spectral bin, raw count,
+Poisson error, analytical value, and residual;
+\item \texttt{CODEX\_WORKLOG.md}: exact execution history, scheduler jobs, failures,
+diagnoses, and results.
+\end{itemize}
+
+\section{Compact calculation recipe}
+
+For another target optical depth at the same temperature and radius, I would:
+\begin{enumerate}
+\item calculate $v_{\rm th}$, $\Delta\nu_D$, $\av$, and $\sigma_0$ with the
+installed RASCAS constants;
+\item calculate $\nhi=\tauzero/(\sigma_0R)$;
+\item calculate $\rho_{\rm RAMSES}$ from \ref{eq:rhoramses};
+\item divide by 232.31332352 before writing the Cartesian density array;
+\item calculate $u$ from \ref{eq:u} and write the remaining homogeneous fields;
+\item convert to RAMSES and verify all 262,144 leaves and field values;
+\item create the radius-0.3 domain and measure $\tauzero$ with clipped rays;
+\item generate and validate line-centre photons;
+\item run RASCAS and require a valid status for every packet;
+\item compute $x$ with \ref{eq:x}, construct \ref{eq:hist}, evaluate
+\ref{eq:analytic}, and compare using \ref{eq:l1} and the diagnostic plots.
+\end{enumerate}
+
+\end{document}
